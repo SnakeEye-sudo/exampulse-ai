@@ -9,6 +9,7 @@ import { getRecentArticles, rankForUser, applyFocusMode, getArticlesByIds } from
 import { dueToday, weakCategories, openMistakes, daysToExam, overallAccuracy, last7DaysActivity, todayIso } from '@/lib/store';
 import { buildAdvice, greeting } from '@/lib/advice';
 import { CATEGORY_MAP, EXAM_MAP } from '@/lib/taxonomy';
+import { ActivityChart } from '@/components/ActivityChart';
 import { t } from '@/lib/i18n';
 import type { Article } from '@/lib/types';
 
@@ -193,18 +194,8 @@ export default function Dashboard() {
               <ProgressBar value={acc.pct} tone={acc.pct >= 70 ? 'good' : acc.pct >= 50 ? 'warm' : 'hot'} />
               <p className="text-[11px] text-faint mt-1.5">{acc.right} / {acc.seen} {T('questions')}</p>
 
-              <div className="mt-4 flex items-end gap-1.5 h-14" aria-hidden>
-                {week.map((d) => {
-                  const max = Math.max(1, ...week.map((x) => x.attempts));
-                  const h = (d.attempts / max) * 100;
-                  return (
-                    <div key={d.date} className="flex-1 flex flex-col items-center gap-1" title={`${d.date}: ${d.attempts}`}>
-                      <div className="w-full rounded-sm bg-brand/70 transition-[height] duration-500"
-                        style={{ height: `${Math.max(d.attempts ? 8 : 2, h)}%` }} />
-                      <span className="text-[9px] text-faint">{d.date.slice(8)}</span>
-                    </div>
-                  );
-                })}
+              <div className="mt-4">
+                <ActivityChart week={week} height={52} lang={lang} showLegend={false} />
               </div>
               <Link href="/progress" className="link text-[13px] mt-3 inline-block">{T('viewAll')} →</Link>
             </div>

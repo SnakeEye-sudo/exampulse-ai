@@ -1,6 +1,6 @@
 import type { UserState, Article, Lang, CategoryId } from './types';
 import { CATEGORY_MAP, EXAM_MAP } from './taxonomy';
-import { dueToday, weakCategories, openMistakes, daysToExam, overallAccuracy, todayIso } from './store';
+import { dueToday, weakCategories, openMistakes, daysToExam, overallAccuracy, todayIso, istDateOf } from './store';
 import { t } from './i18n';
 
 export interface Advice {
@@ -22,7 +22,7 @@ export function buildAdvice(s: UserState, todaysArticles: Article[]): Advice {
   const exam = EXAM_MAP[s.profile.primaryExam];
   const examName = exam ? exam.short : 'your exam';
   const high = todaysArticles.filter((a) => a.relevance.priority === 'high');
-  const readToday = new Set(s.reads.filter((r) => r.at.slice(0, 10) === todayIso()).map((r) => r.articleId));
+  const readToday = new Set(s.reads.filter((r) => istDateOf(r.at) === todayIso()).map((r) => r.articleId));
   const unreadHigh = high.filter((a) => !readToday.has(a.id));
 
   const steps: Advice['steps'] = [];

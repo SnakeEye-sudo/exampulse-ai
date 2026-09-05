@@ -22,6 +22,22 @@ export const todayIso = (): string => {
   return f.format(new Date());
 };
 
+/**
+ * Bucket a timestamp by Indian calendar day.
+ *
+ * `iso.slice(0, 10)` is the UTC date, and IST is UTC+5:30 — so anything studied
+ * after 18:30 IST would be filed under the previous day. For an app whose whole
+ * premise is daily streaks and "what did I do today", that is not a rounding
+ * error, it is wrong every single evening.
+ */
+export const istDateOf = (iso: string): string => {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso.slice(0, 10);
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(d);
+};
+
 export const addDays = (iso: string, n: number): string => {
   const d = new Date(`${iso}T00:00:00+05:30`);
   d.setDate(d.getDate() + n);
@@ -264,7 +280,7 @@ export function last7DaysActivity(s: UserState): { date: string; attempts: numbe
   const today = todayIso();
   for (let i = 6; i >= 0; i--) {
     const d = addDays(today, -i);
-    const dayAttempts = s.attempts.filter((a) => a.at.slice(0, 10) === d);
+    const dayAttempts = s.attempts.filter((a) => istDateOf(a.at) === d);
     out.push({ date: d, attempts: dayAttempts.length, correct: dayAttempts.filter((x) => x.correct).length });
   }
   return out;

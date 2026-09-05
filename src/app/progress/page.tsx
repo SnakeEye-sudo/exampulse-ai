@@ -4,6 +4,7 @@ import { useMemo } from 'react';
 import Link from 'next/link';
 import { useApp } from '@/components/AppProvider';
 import { Empty, ProgressBar, Spinner } from '@/components/ui';
+import { ActivityChart } from '@/components/ActivityChart';
 import { categoryStats, overallAccuracy, last7DaysActivity, openMistakes, dueToday, daysToExam } from '@/lib/store';
 import { CATEGORY_MAP, EXAM_MAP, SRS_LADDER } from '@/lib/taxonomy';
 import { t } from '@/lib/i18n';
@@ -62,25 +63,7 @@ export default function ProgressPage() {
       <section className="mb-7">
         <h2 className="label mb-2.5">{lang === 'hi' ? 'पिछले 7 दिन' : 'Last 7 days'}</h2>
         <div className="card p-4">
-          <div className="flex items-end gap-2 h-24">
-            {week.map((d) => {
-              const max = Math.max(1, ...week.map((x) => x.attempts));
-              return (
-                <div key={d.date} className="flex-1 flex flex-col items-center gap-1.5">
-                  <span className="text-[10px] text-faint tabular-nums">{d.attempts || ''}</span>
-                  <div className="w-full flex flex-col justify-end" style={{ height: '100%' }}>
-                    <div className="w-full rounded-t bg-good/70" style={{ height: `${(d.correct / max) * 100}%` }} />
-                    <div className="w-full rounded-b bg-hot/50" style={{ height: `${((d.attempts - d.correct) / max) * 100}%` }} />
-                  </div>
-                  <span className="text-[10px] text-faint">{d.date.slice(5)}</span>
-                </div>
-              );
-            })}
-          </div>
-          <div className="flex gap-4 mt-3 text-[11px] text-faint">
-            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-good/70" />{T('correct')}</span>
-            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 rounded-sm bg-hot/50" />{T('incorrect')}</span>
-          </div>
+          <ActivityChart week={week} height={96} lang={lang} />
         </div>
       </section>
 
