@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="ExamPulse AI">
+  <rect width="512" height="512" rx="112" fill="#155E75"/>
+  <path d="M64 300 h74 l40 -96 l46 176 l44 -232 l42 152 h74"
+        fill="none" stroke="#F5C24C" stroke-width="26"
+        stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="146" y="366" width="220" height="20" rx="10" fill="#ffffff" opacity="0.9"/>
+  <rect x="186" y="406" width="140" height="20" rx="10" fill="#ffffff" opacity="0.55"/>
+</svg>

@@ -1,0 +1,104 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---------------------------------------------------------------------------
+   Reading-first palette. This is a study tool people open at 6am and stare at
+   for an hour, so: paper-like ground, high-contrast body text, colour reserved
+   for meaning (priority, correctness, verification) rather than decoration.
+   --------------------------------------------------------------------------- */
+:root {
+  --ink: 24 24 27;
+  --muted: 82 82 91;
+  --faint: 133 133 143;
+  --paper: 250 249 246;
+  --raised: 255 255 255;
+  --line: 226 224 218;
+  --brand: 21 94 117;
+  --brandsoft: 236 246 249;
+  --hot: 180 35 24;
+  --warm: 176 106 8;
+  --good: 21 115 71;
+  --font-ui: ui-sans-serif, system-ui, 'Segoe UI', Roboto, 'Noto Sans Devanagari', sans-serif;
+  --font-read: 'Iowan Old Style', 'Palatino Linotype', Palatino, Georgia, 'Noto Serif Devanagari', serif;
+  color-scheme: light;
+}
+
+.dark {
+  --ink: 237 236 233;
+  --muted: 163 162 158;
+  --faint: 122 122 126;
+  --paper: 17 18 20;
+  --raised: 26 27 30;
+  --line: 47 48 52;
+  --brand: 103 187 209;
+  --brandsoft: 20 41 48;
+  --hot: 248 128 114;
+  --warm: 226 168 74;
+  --good: 92 199 148;
+  color-scheme: dark;
+}
+
+* { -webkit-tap-highlight-color: transparent; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  background: rgb(var(--paper));
+  color: rgb(var(--ink));
+  font-family: var(--font-ui);
+  font-feature-settings: 'kern', 'liga';
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior-y: none;
+}
+
+/* Devanagari needs a touch more line-height than Latin to stay readable. */
+:lang(hi), .hi { line-height: 1.75; }
+
+@layer components {
+  .card {
+    @apply bg-raised border border-line rounded-lg;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-md px-3.5 py-2 text-sm font-medium
+           border border-line bg-raised text-ink transition-colors
+           hover:bg-brandsoft active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none;
+  }
+  .btn-primary {
+    @apply bg-brand text-white border-brand hover:opacity-90 hover:bg-brand;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1 rounded-full border border-line px-2.5 py-0.5
+           text-[11px] font-medium tracking-wide uppercase text-muted;
+  }
+  .label {
+    @apply text-[11px] font-semibold uppercase tracking-[0.08em] text-faint;
+  }
+  .prose-read {
+    @apply font-serif text-[16.5px] leading-[1.75] text-ink;
+  }
+  .link {
+    @apply text-brand underline underline-offset-2 decoration-brand/30 hover:decoration-brand;
+  }
+  .skel {
+    @apply animate-pulse rounded bg-line/60;
+  }
+}
+
+/* Keep long source URLs and tables from pushing the layout sideways. */
+.scroll-x { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.scroll-x::-webkit-scrollbar { height: 6px; }
+.scroll-x::-webkit-scrollbar-thumb { background: rgb(var(--line)); border-radius: 3px; }
+
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff; }
+  .card { border-color: #ddd; break-inside: avoid; }
+}
+
+@keyframes riseIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+.rise { animation: riseIn .28s ease-out both; }
+@media (prefers-reduced-motion: reduce) {
+  .rise, .skel { animation: none !important; }
+  * { transition-duration: .01ms !important; }
+}

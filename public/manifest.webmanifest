@@ -1,0 +1,24 @@
+{
+  "name": "ExamPulse AI — Current Affairs for Government Exams",
+  "short_name": "ExamPulse",
+  "description": "Daily current affairs turned into exam-oriented revision, MCQs and spaced repetition for UPSC, BPSC, State PCS, SSC, Banking, Railway, Defence, Police and Teaching aspirants.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#faf9f6",
+  "theme_color": "#155e75",
+  "lang": "en-IN",
+  "dir": "ltr",
+  "categories": ["education", "news", "productivity"],
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Daily Quiz", "short_name": "Quiz", "url": "/quiz", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Revision Due", "short_name": "Revision", "url": "/revision", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Mistake Book", "short_name": "Mistakes", "url": "/mistakes", "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

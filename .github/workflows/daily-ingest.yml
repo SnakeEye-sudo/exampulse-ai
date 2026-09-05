@@ -1,0 +1,61 @@
+name: Daily current-affairs ingestion
+
+# 00:45 UTC = 06:15 IST. Aspirants open the app with their morning tea, so the
+# day's material has to be in place before then, not at 9am.
+on:
+  schedule:
+    - cron: '45 0 * * *'
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: 'Max articles to enrich this run'
+        required: false
+        default: '40'
+      date:
+        description: 'Override the ingestion date (YYYY-MM-DD)'
+        required: false
+
+concurrency:
+  group: ingest
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  ingest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+
+      - name: Prune archive beyond 120 days
+        run: node --experimental-strip-types --no-warnings scripts/prune.mjs
+
+      - name: Run ingestion pipeline
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          PIPELINE_LIMIT: ${{ github.event.inputs.limit || '40' }}
+          PIPELINE_DATE: ${{ github.event.inputs.date }}
+        run: node --experimental-strip-types --no-warnings scripts/pipeline.mjs
+
+      - name: Commit today's data
+        run: |
+          git config user.name  "exampulse-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/data
+          if git diff --staged --quiet; then
+            echo "No new data — nothing to commit."
+            exit 0
+          fi
+          COUNT=$(node -e "const m=require('./public/data/manifest.json');console.log(m.totalArticles+' articles, '+m.totalMcqs+' MCQs')")
+          git commit -m "data: daily ingestion $(TZ=Asia/Kolkata date +%F) — ${COUNT}"
+          git push
