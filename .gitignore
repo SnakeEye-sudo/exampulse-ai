@@ -7,4 +7,4 @@ out
 *.tsbuildinfo
 next-env.d.ts
 .vercel
-exampulse-ai.tar.gz
+*.tar.gz
