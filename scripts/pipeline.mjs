@@ -154,6 +154,33 @@ function assemble(src, enr, today) {
   };
 }
 
+/** Shared similarity test for two enriched articles' title+tag token sets. */
+function sameStory(a, b) {
+  let inter = 0;
+  for (const w of a) if (b.has(w)) inter++;
+  const union = a.size + b.size - inter;
+  const jac = union ? inter / union : 0;
+  const contain = inter / Math.max(1, Math.min(a.size, b.size));
+  return jac >= 0.4 || contain >= 0.62;
+}
+
+const storyTokens = (a) => tokens(`${a.title.en} ${(a.tags || []).join(' ')}`);
+
+/**
+ * Yesterday's slate is not a clean slate. The pre-enrichment filter compares
+ * raw feed headlines against already-enriched ones, which are worded very
+ * differently, so the same story reappears a day later under a tidier title.
+ * This compares like with like: today's enriched articles against the enriched
+ * articles of the past week.
+ */
+function dropAlreadyPublished(articles, priorTokenSets) {
+  if (!priorTokenSets.length) return articles;
+  const kept = articles.filter((a) => !priorTokenSets.some((prev) => sameStory(storyTokens(a), prev)));
+  const removed = articles.length - kept.length;
+  if (removed) console.log(`   → dropped ${removed} story/stories already published earlier this week`);
+  return kept;
+}
+
 function dedupeEnriched(articles) {
   const withTok = articles
     .map((a) => ({ a, tok: tokens(`${a.title.en} ${a.tags.join(' ')}`) }))
@@ -163,14 +190,7 @@ function dedupeEnriched(articles) {
 
   const kept = [];
   for (const cand of withTok) {
-    const dup = kept.find((k) => {
-      let inter = 0;
-      for (const w of cand.tok) if (k.tok.has(w)) inter++;
-      const union = k.tok.size + cand.tok.size - inter;
-      const jac = union ? inter / union : 0;
-      const contain = inter / Math.max(1, Math.min(k.tok.size, cand.tok.size));
-      return jac >= 0.4 || contain >= 0.62;
-    });
+    const dup = kept.find((k) => sameStory(cand.tok, k.tok));
     if (dup) {
       dup.a.source.corroboration = [
         ...(dup.a.source.corroboration || []),
@@ -237,9 +257,14 @@ async function main() {
   const manifestNow = await readJson(path.join(DATA, 'manifest.json'), { dates: [] });
   const recentDates = (manifestNow.dates || []).slice(-7);
   const seen = [];
+  const priorStories = [];
   for (const d of recentDates) {
+    if (d === today) continue;              // today's own file is merged, not filtered
     const day = await readJson(path.join(DATA, 'day', `${d}.json`), null);
-    for (const a of day?.articles || []) seen.push(tokens(a.title.en));
+    for (const a of day?.articles || []) {
+      seen.push(tokens(a.title.en));
+      priorStories.push(tokens(`${a.title.en} ${(a.tags || []).join(' ')}`));
+    }
   }
   const fresh = unique.filter((it) => {
     const tk = tokens(it.title);
@@ -290,7 +315,12 @@ async function main() {
   // First Geosynchronous Imaging Satellite" vs "ISRO launches EOS-05") only
   // become comparable now. Keep the best-scored copy and fold the rest in as
   // corroborating sources — which is more useful than deleting them outright.
-  articles = dedupeEnriched(articles);
+  articles = dropAlreadyPublished(dedupeEnriched(articles), priorStories);
+  if (!articles.length) {
+    console.log('   → everything selected today was already covered; nothing new to write.');
+    await rebuildDerived();
+    return;
+  }
   const dayPath = path.join(DATA, 'day', `${today}.json`);
   const existing = await readJson(dayPath, null);
   const merged = [...(existing?.articles || [])];

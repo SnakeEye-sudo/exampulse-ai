@@ -123,7 +123,9 @@ export const SOURCES = [
   },
   {
     id: 'gn-sc', name: 'Google News — Supreme Court', homepage: 'https://news.google.com',
-    url: 'https://news.google.com/rss/search?q=(%22Supreme+Court%22+OR+%22High+Court%22)+India+verdict+OR+judgment+when:2d&hl=en-IN&gl=IN&ceid=IN:en',
+    // Scoped to India explicitly — an unscoped "Supreme Court" query pulls in
+    // US state litigation that is irrelevant to any Indian exam.
+    url: 'https://news.google.com/rss/search?q=(%22Supreme+Court+of+India%22+OR+%22Supreme+Court%22+India)+(verdict+OR+judgment+OR+bench+OR+constitutional)+when:2d&hl=en-IN&gl=IN&ceid=IN:en',
     tier: 'unverified', weight: 1.15, defaultCategories: ['judiciary'], aggregator: true,
   },
 

@@ -40,12 +40,27 @@ function dedupeEnriched(articles) {
   return kept.map((k) => k.a);
 }
 
-const files = (await fs.readdir(DAY)).filter((f) => f.endsWith('.json'));
+const files = (await fs.readdir(DAY)).filter((f) => f.endsWith('.json')).sort();
+
+// Cross-day pass: a story that reappeared under a tidier headline the next day
+// is the same story. The earlier day keeps it.
+const published = [];
 for (const f of files) {
   const p = path.join(DAY, f);
   const day = JSON.parse(await fs.readFile(p, 'utf8'));
   const before = day.articles.length;
-  day.articles = dedupeEnriched(day.articles).sort((a, b) => b.relevance.score - a.relevance.score);
+  let arts = dedupeEnriched(day.articles);
+  arts = arts.filter((a) => {
+    const tok = tokens(`${a.title.en} ${(a.tags || []).join(' ')}`);
+    return !published.some((prev) => {
+      let inter = 0;
+      for (const w of tok) if (prev.has(w)) inter++;
+      const union = prev.size + tok.size - inter;
+      return (union ? inter / union : 0) >= 0.4 || inter / Math.max(1, Math.min(prev.size, tok.size)) >= 0.62;
+    });
+  });
+  for (const a of arts) published.push(tokens(`${a.title.en} ${(a.tags || []).join(' ')}`));
+  day.articles = arts.sort((a, b) => b.relevance.score - a.relevance.score);
   await fs.writeFile(p, JSON.stringify(day, null, 0) + '\n');
   console.log(`${f}: ${before} → ${day.articles.length}`);
 }

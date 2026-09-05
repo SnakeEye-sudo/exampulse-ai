@@ -48,6 +48,12 @@ const NOISE = [
   ['live score', -5], ['playing xi', -5], ['match preview', -4], ['transfer rumour', -5],
   ['road accident', -3], ['murder', -3], ['robbery', -3.5], ['arrested for', -2.5],
   ['weather today', -3], ['gold rate', -3], ['petrol price', -2],
+  // Foreign domestic litigation and local-government process: real news, but
+  // not on any Indian exam syllabus, and it was eating enrichment quota.
+  ['mistrial', -6], ['grand jury', -5], ['plea deal', -5], ['indicted', -4],
+  ['redistricting', -5], ['house map', -5], ['county court', -5], ['district attorney', -5],
+  ['lawsuit filed', -3], ['sentenced to', -3], ['jurisdiction for', -3],
+  ['ganesh festivities', -3], ['awaits', -3], ['invites applications', -3],
 ];
 
 function hits(text, table) {
