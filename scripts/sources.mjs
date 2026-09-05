@@ -126,6 +126,74 @@ export const SOURCES = [
     url: 'https://news.google.com/rss/search?q=(%22Supreme+Court%22+OR+%22High+Court%22)+India+verdict+OR+judgment+when:2d&hl=en-IN&gl=IN&ceid=IN:en',
     tier: 'unverified', weight: 1.15, defaultCategories: ['judiciary'], aggregator: true,
   },
+
+  // --- Added after CI showed Indian Express blocking datacenter IP ranges. The
+  // IE feeds are kept (they work from residential networks and for local runs)
+  // but these carry the load when they 403 from a GitHub runner. --------------
+  { id: 'hindu-states', name: 'The Hindu — Other States', homepage: 'https://www.thehindu.com',
+    url: 'https://www.thehindu.com/news/national/other-states/feeder/default.rss', tier: 'verified', weight: 1.3,
+    defaultCategories: ['state'] },
+  { id: 'hindu-agri', name: 'The Hindu — Agri Business', homepage: 'https://www.thehindu.com',
+    url: 'https://www.thehindu.com/business/agri-business/feeder/default.rss', tier: 'verified', weight: 1.35,
+    defaultCategories: ['agriculture'] },
+  { id: 'hindu-editorial', name: 'The Hindu — Editorial', homepage: 'https://www.thehindu.com',
+    url: 'https://www.thehindu.com/opinion/editorial/feeder/default.rss', tier: 'verified', weight: 1.4,
+    defaultCategories: [] },
+  { id: 'bl-national', name: 'BusinessLine — National', homepage: 'https://www.thehindubusinessline.com',
+    url: 'https://www.thehindubusinessline.com/news/national/feeder/default.rss', tier: 'verified', weight: 1.2,
+    defaultCategories: ['national'] },
+  { id: 'et-economy', name: 'The Economic Times — Economy', homepage: 'https://economictimes.indiatimes.com',
+    url: 'https://economictimes.indiatimes.com/news/economy/rssfeeds/1373380680.cms', tier: 'verified', weight: 1.35,
+    defaultCategories: ['economy'] },
+  { id: 'et-top', name: 'The Economic Times — Top Stories', homepage: 'https://economictimes.indiatimes.com',
+    url: 'https://economictimes.indiatimes.com/rssfeedstopstories.cms', tier: 'verified', weight: 1.1,
+    defaultCategories: [] },
+  { id: 'toi-india', name: 'The Times of India — India', homepage: 'https://timesofindia.indiatimes.com',
+    url: 'https://timesofindia.indiatimes.com/rssfeeds/-2128936835.cms', tier: 'verified', weight: 1.05,
+    defaultCategories: ['national'] },
+  { id: 'ndtv-india', name: 'NDTV — India', homepage: 'https://www.ndtv.com',
+    url: 'https://feeds.feedburner.com/ndtvnews-india-news', tier: 'verified', weight: 1.05,
+    defaultCategories: ['national'] },
+  { id: 'mint-politics', name: 'Mint — Politics', homepage: 'https://www.livemint.com',
+    url: 'https://www.livemint.com/rss/politics', tier: 'verified', weight: 1.1,
+    defaultCategories: ['polity'] },
+
+  // --- Topic queries covering syllabus areas the newsroom feeds under-serve --
+  {
+    id: 'gn-explained', name: 'Google News — Explained & Policy', homepage: 'https://news.google.com',
+    url: 'https://news.google.com/rss/search?q=(%22explained%22+OR+%22what+is%22)+India+policy+when:2d&hl=en-IN&gl=IN&ceid=IN:en',
+    tier: 'unverified', weight: 1.25, defaultCategories: [], aggregator: true,
+  },
+  {
+    id: 'gn-polity', name: 'Google News — Polity & Constitution', homepage: 'https://news.google.com',
+    url: 'https://news.google.com/rss/search?q=(%22Supreme+Court%22+OR+Parliament+OR+constitutional+OR+%22Election+Commission%22)+India+when:2d&hl=en-IN&gl=IN&ceid=IN:en',
+    tier: 'unverified', weight: 1.2, defaultCategories: ['polity'], aggregator: true,
+  },
+  {
+    id: 'gn-env', name: 'Google News — Environment & Ecology', homepage: 'https://news.google.com',
+    url: 'https://news.google.com/rss/search?q=(environment+OR+climate+OR+tiger+OR+biodiversity+OR+wetland)+India+when:3d&hl=en-IN&gl=IN&ceid=IN:en',
+    tier: 'unverified', weight: 1.2, defaultCategories: ['environment'], aggregator: true,
+  },
+  {
+    id: 'gn-agri', name: 'Google News — Agriculture', homepage: 'https://news.google.com',
+    url: 'https://news.google.com/rss/search?q=(agriculture+OR+farmers+OR+MSP+OR+crop+OR+irrigation)+India+government+when:3d&hl=en-IN&gl=IN&ceid=IN:en',
+    tier: 'unverified', weight: 1.15, defaultCategories: ['agriculture'], aggregator: true,
+  },
+  {
+    id: 'gn-health', name: 'Google News — Health', homepage: 'https://news.google.com',
+    url: 'https://news.google.com/rss/search?q=(%22health+ministry%22+OR+WHO+OR+vaccine+OR+ICMR+OR+outbreak)+India+when:3d&hl=en-IN&gl=IN&ceid=IN:en',
+    tier: 'unverified', weight: 1.1, defaultCategories: ['health'], aggregator: true,
+  },
+  {
+    id: 'gn-heritage', name: 'Google News — Heritage, GI & UNESCO', homepage: 'https://news.google.com',
+    url: 'https://news.google.com/rss/search?q=(UNESCO+OR+Ramsar+OR+%22GI+tag%22+OR+%22world+heritage%22+OR+%22geographical+indication%22)+India+when:5d&hl=en-IN&gl=IN&ceid=IN:en',
+    tier: 'unverified', weight: 1.3, defaultCategories: ['environment'], aggregator: true,
+  },
+  {
+    id: 'gn-bihar2', name: 'Google News — Bihar Development', homepage: 'https://news.google.com',
+    url: 'https://news.google.com/rss/search?q=Bihar+(Patna+OR+Nitish+OR+budget+OR+infrastructure+OR+appointment)+when:2d&hl=en-IN&gl=IN&ceid=IN:en',
+    tier: 'unverified', weight: 1.25, defaultCategories: ['state'], state: 'bihar', aggregator: true,
+  },
 ];
 
 export const TIER_TRUST = { primary: 1.0, verified: 0.85, unverified: 0.6 };

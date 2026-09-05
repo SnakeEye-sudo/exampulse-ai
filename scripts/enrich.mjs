@@ -6,9 +6,14 @@ const MODEL_CHAIN = (process.env.GEMINI_MODEL ? [process.env.GEMINI_MODEL] : [])
   'gemini-flash-latest',
   'gemini-3.5-flash',
   'gemini-3-flash-preview',
+  'gemini-3.6-flash',
+  'gemini-3.1-flash-lite',
   'gemini-flash-lite-latest',
+  'gemini-3.5-flash-lite',
   'gemini-2.5-flash',
 ]);
+/** Models that answered 503 this round; cleared when we start a fresh round. */
+let exhausted = new Set();
 let ACTIVE_MODEL = MODEL_CHAIN[0];
 const ENDPOINT = (m) => `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent`;
 
@@ -137,8 +142,24 @@ const RESPONSE_SCHEMA = {
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-async function callGemini(apiKey, prompt, { retries = 4 } = {}) {
-  let lastErr;
+async function callGemini(apiKey, prompt, { retries = 6 } = {}) {
+  // Free-tier capacity fluctuates minute to minute, and a model can be retired
+  // without notice. So: walk the chain on 404/503, and when every model in the
+  // chain is busy, wait it out and start the chain again rather than giving up
+  // on the day's material.
+  let lastErr = new Error('no attempt was made');
+
+  const advance = (reason) => {
+    exhausted.add(ACTIVE_MODEL);
+    const next = MODEL_CHAIN.find((m) => !exhausted.has(m));
+    if (next) {
+      console.log(`     ${ACTIVE_MODEL} ${reason} → ${next}`);
+      ACTIVE_MODEL = next;
+      return true;
+    }
+    return false;
+  };
+
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const res = await fetch(ENDPOINT(ACTIVE_MODEL), {
@@ -161,38 +182,46 @@ async function callGemini(apiKey, prompt, { retries = 4 } = {}) {
         }),
       });
 
-      // 404 = this model was retired. Advance the chain and retry immediately.
-      if (res.status === 404) {
-        const i = MODEL_CHAIN.indexOf(ACTIVE_MODEL);
-        const next = MODEL_CHAIN[i + 1];
-        if (next) {
-          console.log(`     model ${ACTIVE_MODEL} unavailable → falling back to ${next}`);
-          ACTIVE_MODEL = next;
-          continue;
-        }
-        throw new Error(`no usable Gemini model: ${(await res.text()).slice(0, 200)}`);
-      }
-      if (res.status === 429 || res.status >= 503) {
-        // 503 often means one model is hot; try a sibling before waiting it out.
-        if (res.status === 503) {
-          const i = MODEL_CHAIN.indexOf(ACTIVE_MODEL);
-          const next = MODEL_CHAIN[i + 1];
-          if (next && attempt < 2) { console.log(`     ${ACTIVE_MODEL} overloaded → ${next}`); ACTIVE_MODEL = next; continue; }
-        }
-        const wait = Math.min(60000, 4000 * 2 ** attempt);
-        console.log(`     rate/server ${res.status}, backing off ${wait / 1000}s`);
+      if (res.status === 404 || res.status === 503) {
+        lastErr = new Error(`${ACTIVE_MODEL}: HTTP ${res.status}`);
+        if (advance(res.status === 404 ? 'unavailable' : 'overloaded')) continue;
+        // Whole chain is busy. Back off, reset it, and try again from the top.
+        const wait = Math.min(90000, 20000 * 2 ** Math.min(attempt, 2));
+        console.log(`     all models busy, waiting ${Math.round(wait / 1000)}s before retrying the chain`);
         await sleep(wait);
+        exhausted = new Set();
+        ACTIVE_MODEL = MODEL_CHAIN[0];
         continue;
       }
-      if (!res.ok) throw new Error(`Gemini ${res.status}: ${(await res.text()).slice(0, 300)}`);
+
+      if (res.status === 429) {
+        lastErr = new Error(`${ACTIVE_MODEL}: rate limited (429)`);
+        if (advance('rate limited')) continue;
+        const wait = Math.min(120000, 30000 * (attempt + 1));
+        console.log(`     rate limited across the chain, waiting ${Math.round(wait / 1000)}s`);
+        await sleep(wait);
+        exhausted = new Set();
+        ACTIVE_MODEL = MODEL_CHAIN[0];
+        continue;
+      }
+
+      if (!res.ok) {
+        lastErr = new Error(`${ACTIVE_MODEL}: HTTP ${res.status} ${(await res.text()).slice(0, 200)}`);
+        await sleep(2500 * (attempt + 1));
+        continue;
+      }
 
       const data = await res.json();
       const cand = data?.candidates?.[0];
       const text = cand?.content?.parts?.map((p) => p.text).filter(Boolean).join('') || '';
-      if (!text) throw new Error(`empty response (finishReason=${cand?.finishReason})`);
+      if (!text) {
+        lastErr = new Error(`empty response (finishReason=${cand?.finishReason ?? 'unknown'})`);
+        await sleep(2000);
+        continue;
+      }
       return JSON.parse(text);
     } catch (err) {
-      lastErr = err;
+      lastErr = err instanceof Error ? err : new Error(String(err));
       if (attempt === retries) break;
       await sleep(3000 * (attempt + 1));
     }
@@ -235,6 +264,7 @@ export async function enrichAll(items, { apiKey, today, batchSize = 3, pauseMs =
 
   for (let b = 0; b < batches.length; b++) {
     const batch = batches[b];
+    exhausted = new Set();
     log(`  batch ${b + 1}/${batches.length} (${batch.length} items)…`);
     try {
       const res = await callGemini(apiKey, buildPrompt(batch, { today }));
@@ -245,8 +275,9 @@ export async function enrichAll(items, { apiKey, today, batchSize = 3, pauseMs =
         else { failures.push({ title: src.title, reason: 'missing idx in response' }); out.push({ src, enr: null }); }
       });
     } catch (err) {
-      log(`     ✗ ${String(err.message || err).slice(0, 160)}`);
-      batch.forEach((src) => { failures.push({ title: src.title, reason: String(err.message || err).slice(0, 120) }); out.push({ src, enr: null }); });
+      const reason = (err && err.message) ? String(err.message) : String(err);
+      log(`     ✗ ${reason.slice(0, 160)}`);
+      batch.forEach((src) => { failures.push({ title: src.title, reason: reason.slice(0, 120) }); out.push({ src, enr: null }); });
     }
     if (b < batches.length - 1) await sleep(pauseMs);
   }

@@ -265,7 +265,25 @@ async function main() {
   }
 
   console.log('6. Writing');
-  let articles = enriched.out.map(({ src, enr }) => assemble(src, enr, today));
+  const enrichedCount = enriched.out.filter((o) => o.enr).length;
+  if (apiKey && enrichedCount === 0) {
+    // The model was configured but nothing came back. Publishing 40 bare
+    // headlines would bury today's real material under stubs, and tomorrow's
+    // run would then skip those stories as "already covered". Better to leave
+    // the archive untouched and let the next run pick them up properly.
+    console.log('   ✗ enrichment produced nothing — leaving existing data untouched.');
+    console.log('     (feeds were fine; this is an upstream model capacity problem.)');
+    await rebuildDerived();
+    return;
+  }
+
+  // Drop items the model failed on rather than shipping stubs — unless we are
+  // deliberately running without AI, where headline-only is the whole point.
+  const usable = apiKey ? enriched.out.filter((o) => o.enr) : enriched.out;
+  if (apiKey && usable.length < enriched.out.length) {
+    console.log(`   → skipping ${enriched.out.length - usable.length} item(s) whose enrichment failed; next run will retry them`);
+  }
+  let articles = usable.map(({ src, enr }) => assemble(src, enr, today));
 
   // Second dedupe pass. The model rewrites headlines into a canonical form, so
   // stories that looked different in raw feed wording ("ISRO Deploys India's
